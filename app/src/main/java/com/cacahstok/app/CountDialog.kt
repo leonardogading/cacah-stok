@@ -94,6 +94,7 @@ object CountDialog {
                         if (existing == null) db.insert(rec) else db.update(rec)
                         // "Belajar": item ini otomatis terisi pada scan berikutnya
                         if (desk.isNotEmpty()) db.upsertItems(listOf(Item(kode, desk, satuan)))
+                        SyncManager.markChanged(activity)
                         saved = true
                         Toast.makeText(activity, "Tersimpan: $kode = ${formatQty(qty)} $satuan", Toast.LENGTH_SHORT).show()
                         dialog.dismiss()
@@ -106,6 +107,7 @@ object CountDialog {
                         .setMessage("Hapus data ${existing.kode} (${formatQty(existing.qty)} ${existing.satuan})?")
                         .setPositiveButton("Hapus") { _, _ ->
                             db.delete(existing.id)
+                            SyncManager.markChanged(activity)
                             saved = true
                             dialog.dismiss()
                         }

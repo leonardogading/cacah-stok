@@ -1,5 +1,7 @@
 # Cacah Stok – Aplikasi Android
 
+**Download APK (selalu versi terbaru):** https://github.com/leonardogading/cacah-stok/releases/latest/download/CacahStok.apk
+
 Aplikasi cacah stok (stock opname) dengan barcode. Berjalan **offline**, data tersimpan di HP, lalu diexport ke Excel.
 
 ## Cara membuat APK
@@ -28,6 +30,70 @@ https://github.com/<akun>/<nama-repo>/releases/latest/download/CacahStok.apk
 Setiap ada perubahan kode yang diunggah, APK baru dibuat otomatis dan link tersebut langsung
 mengarah ke versi terbaru. APK ditandatangani dengan kunci tetap (`app/cacahstok.jks`), jadi update
 bisa langsung dipasang menimpa versi lama tanpa kehilangan data.
+
+## Pengiriman data otomatis ke komputer
+
+Di layar awal tekan tombol hijau **Pengiriman data**, lalu pilih salah satu:
+
+| Pilihan | Hasil | Syarat |
+|---|---|---|
+| **Hanya di HP** | Data tetap di HP, export Excel manual | – |
+| **Kirim otomatis ke Google Sheets** | Setiap Simpan/Edit/Hapus langsung masuk ke satu spreadsheet bersama | HP ada internet |
+| **Simpan ke folder bersama jaringan kantor** | File Excel per HP di folder share komputer Windows, diperbarui setiap ada scan | HP di WiFi kantor yang sama |
+
+Isi pengaturannya, tekan **TES KONEKSI** sampai muncul ✔, lalu **SIMPAN**. Data yang sudah ada
+di HP langsung ikut terkirim. Status pengiriman terlihat di layar scan (tombol **KIRIM SEKARANG**
+untuk mengirim ulang manual). Jika HP sedang offline, aplikasi mencoba lagi otomatis saat
+jaringan kembali.
+
+**Hapus semua data** di HP memulai *sesi* baru: data yang sudah terkirim ke Google Sheets / folder
+tidak ikut terhapus.
+
+### A. Setup Google Sheets (sekali saja, oleh admin)
+
+1. Buat Google Sheets baru, mis. *Hasil Cacah Stok*. Atur **File → Settings → Time zone** ke
+   (GMT+07:00) Jakarta / Bangkok.
+2. Menu **Extensions → Apps Script**. Hapus isi `Code.gs`, tempel seluruh isi file
+   [`google-apps-script/Code.gs`](google-apps-script/Code.gs), lalu **Save**.
+3. **Deploy → New deployment** → ikon roda gigi → **Web app**.
+   - *Execute as*: **Me**
+   - *Who has access*: **Anyone**
+4. Klik **Deploy** → **Authorize access** → pilih akun Google → *Advanced* → *Go to … (unsafe)* →
+   **Allow**. Salin **Web app URL** (diawali `https://script.google.com/macros/s/…/exec`).
+5. Di setiap HP: **Pengiriman data → Google Sheets** → tempel URL → **TES KONEKSI** → **SIMPAN**.
+   Cara mudah membagikan URL ke HP: kirim lewat WhatsApp lalu salin–tempel.
+
+Data masuk ke tab **Cacah Stok** dengan kolom: Tanggal & Jam Scan, Username, Lokasi Scan,
+Kode Item, Deskripsi Item, Qty, Satuan, HP, Sesi, ID. Di komputer bisa langsung
+**File → Download → Microsoft Excel (.xlsx)**.
+
+Opsional: isi `const TOKEN = 'katarahasia';` di script (lalu **Deploy → Manage deployments →
+Edit → Version: New version → Deploy**) dan isi Token yang sama di aplikasi, agar hanya
+aplikasi Anda yang bisa mengirim data.
+
+### B. Setup folder bersama di komputer Windows (sekali saja)
+
+1. Buat folder, mis. `C:\CacahStok`.
+2. Klik kanan folder → **Properties → Sharing → Advanced Sharing** → centang
+   **Share this folder** → **Permissions** → beri **Change** (atau Full Control) untuk user yang
+   akan dipakai HP → OK.
+3. Catat alamat IP komputer: buka *Command Prompt*, ketik `ipconfig`, lihat **IPv4 Address**
+   (mis. `192.168.1.10`). Sebaiknya IP ini dibuat tetap (static / DHCP reservation di router).
+4. Pastikan jaringan Windows berprofil **Private** dan **File and printer sharing** aktif
+   (Settings → Network & Internet → Advanced sharing settings).
+5. Di setiap HP: **Pengiriman data → Folder jaringan kantor**:
+   - Alamat folder: `\\192.168.1.10\CacahStok`
+   - Username / Password: akun Windows yang diberi izin pada langkah 2
+     (akun Microsoft: pakai alamat email & passwordnya; disarankan buat user lokal khusus,
+     mis. `cacahstok`)
+   - Domain: kosongkan, kecuali komputer kantor memakai domain
+   - **TES KONEKSI** → **SIMPAN**
+
+Setiap HP membuat file `CacahStok_<HP>_<sesi>.xlsx` di folder tersebut. Untuk menggabungkan
+semua file di Excel: **Data → Get Data → From File → From Folder** → pilih folder → **Combine**.
+
+Catatan: password folder disimpan di HP ini. Gunakan user Windows khusus yang hanya punya akses
+ke folder tersebut.
 
 ## Alur pemakaian
 
@@ -89,6 +155,9 @@ app/src/main/java/com/cacahstok/app/
   XlsxReader.kt      – baca .xlsx (lokasi & master item)
   XlsxWriter.kt      – tulis .xlsx hasil export
   BarcodeParser.kt   – memecah isi barcode menjadi kode & nama item
+  SettingsActivity.kt – pilihan tujuan pengiriman data + tes koneksi
+  Sync.kt            – pengiriman otomatis (Google Sheets & folder jaringan SMB)
+google-apps-script/Code.gs – script penerima data di Google Sheets
 app/src/main/assets/lokasiscan.xlsx – daftar lokasi bawaan
 ```
 

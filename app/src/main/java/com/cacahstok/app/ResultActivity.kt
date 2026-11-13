@@ -1,6 +1,7 @@
 package com.cacahstok.app
 
 import android.content.Intent
+import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
@@ -37,6 +38,8 @@ class ResultActivity : AppCompatActivity() {
     private lateinit var etSearch: EditText
     private lateinit var tvSummary: TextView
     private val adapter = RecordAdapter { r -> CountDialog.showEdit(this, db, r) { refresh() } }
+    private lateinit var tvSync: TextView
+    private val prefListener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> updateSync() }
 
     private val createDoc = registerForActivityResult(
         ActivityResultContracts.CreateDocument(XLSX_MIME)
@@ -50,6 +53,8 @@ class ResultActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         title = "Hasil Scan"
 
+        tvSync = findViewById(R.id.tvSync)
+        prefs.sp.registerOnSharedPreferenceChangeListener(prefListener)
         cbLokasi = findViewById(R.id.cbLokasi)
         etSearch = findViewById(R.id.etSearch)
         tvSummary = findViewById(R.id.tvSummary)
@@ -82,6 +87,16 @@ class ResultActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         refresh()
+        updateSync()
+    }
+
+    override fun onDestroy() {
+        prefs.sp.unregisterOnSharedPreferenceChangeListener(prefListener)
+        super.onDestroy()
+    }
+
+    private fun updateSync() {
+        tvSync.text = SyncManager.statusText(prefs)
     }
 
     private fun lokasiFilter(): String? = if (cbLokasi.isChecked && prefs.lokasi.isNotBlank()) prefs.lokasi else null
@@ -153,6 +168,8 @@ class ResultActivity : AppCompatActivity() {
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menu.add(0, MENU_SYNC, 0, "Kirim sekarang")
+        menu.add(0, MENU_SETTINGS, 0, "Pengaturan pengiriman data")
         menu.add(0, MENU_DELETE_ALL, 0, "Hapus semua data")
         return true
     }
@@ -160,12 +177,39 @@ class ResultActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             android.R.id.home -> { finish(); return true }
+            MENU_SYNC -> {
+                if (prefs.syncMode == SyncMode.NONE) {
+                    startActivity(Intent(this, SettingsActivity::class.java))
+                } else {
+                    SyncManager.request(this); toast("Mengirim data…")
+                }
+                return true
+            }
+            MENU_SETTINGS -> {
+                startActivity(Intent(this, SettingsActivity::class.java)); return true
+            }
             MENU_DELETE_ALL -> {
+                val pending = prefs.syncMode != SyncMode.NONE && prefs.hasPendingChanges
+                val extra = when {
+                    pending -> "\n\n⚠ PERHATIAN: masih ada perubahan yang BELUM terkirim ke ${prefs.syncMode.label}!"
+                    prefs.syncMode != SyncMode.NONE ->
+                        "\n\nData yang sudah terkirim ke ${prefs.syncMode.label} tetap aman (tidak ikut terhapus)."
+                    else -> ""
+                }
                 MaterialAlertDialogBuilder(this)
                     .setTitle("Hapus semua data?")
                     .setMessage("Semua hasil cacah (${db.countRecords(null)} baris, semua lokasi) akan dihapus " +
-                        "dari HP ini. Pastikan sudah diexport. Lanjutkan?")
-                    .setPositiveButton("Hapus") { _, _ -> db.deleteAll(); refresh(); toast("Semua data dihapus") }
+                        "dari HP ini. Pastikan sudah diexport.$extra")
+                    .setPositiveButton("Hapus") { _, _ ->
+                        db.deleteAll()
+                        // Mulai sesi baru: file/baris lama di tujuan tidak ditimpa
+                        prefs.newBatch()
+                        prefs.syncedSeq = prefs.changeSeq
+                        prefs.lastSyncAt = 0
+                        prefs.lastSyncError = ""
+                        refresh(); updateSync()
+                        toast("Semua data dihapus. Sesi cacah baru dimulai.")
+                    }
                     .setNegativeButton("Batal", null)
                     .show()
                 return true
@@ -179,5 +223,7 @@ class ResultActivity : AppCompatActivity() {
     companion object {
         const val XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         private const val MENU_DELETE_ALL = 1
+        private const val MENU_SYNC = 2
+        private const val MENU_SETTINGS = 3
     }
 }

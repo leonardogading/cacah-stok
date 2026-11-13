@@ -5,6 +5,14 @@
     android:orientation="vertical"
     android:padding="12dp">
 
+    <TextView
+        android:id="@+id/tvSync"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/card_bg"
+        android:padding="8dp"
+        android:textSize="12sp" />
+
     <CheckBox
         android:id="@+id/cbLokasi"
         android:layout_width="match_parent"

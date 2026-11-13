@@ -52,9 +52,18 @@ class LoginActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnMulai).setOnClickListener { mulai() }
         findViewById<Button>(R.id.btnImporLokasi).setOnClickListener { pickLokasi.launch(arrayOf("*/*")) }
         findViewById<Button>(R.id.btnImporItem).setOnClickListener { pickItems.launch(arrayOf("*/*")) }
+        findViewById<Button>(R.id.btnPengiriman).setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
         findViewById<Button>(R.id.btnLihatHasil).setOnClickListener {
             startActivity(Intent(this, ResultActivity::class.java))
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        findViewById<Button>(R.id.btnPengiriman).text =
+            "Pengiriman data: ${prefs.syncMode.label}"
     }
 
     private fun mulai() {

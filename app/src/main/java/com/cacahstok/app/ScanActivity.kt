@@ -1,6 +1,8 @@
 package com.cacahstok.app
 
 import android.content.Intent
+import android.content.SharedPreferences
+import android.view.View
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.Menu
@@ -31,6 +33,9 @@ class ScanActivity : AppCompatActivity() {
     private lateinit var tvTotal: TextView
     private val adapter = RecordAdapter { r -> CountDialog.showEdit(this, db, r) { refresh(); focusScanner() } }
     private var dialogOpen = false
+    private lateinit var tvSync: TextView
+    private lateinit var btnKirim: Button
+    private val prefListener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> updateSync() }
 
     private val cameraScan = registerForActivityResult(ScanContract()) { result ->
         val contents = result.contents
@@ -52,6 +57,14 @@ class ScanActivity : AppCompatActivity() {
         cbAuto = findViewById(R.id.cbAuto)
         cbAuto.isChecked = prefs.autoRescan
         cbAuto.setOnCheckedChangeListener { _, checked -> prefs.autoRescan = checked }
+
+        tvSync = findViewById(R.id.tvSync)
+        btnKirim = findViewById(R.id.btnKirim)
+        btnKirim.setOnClickListener {
+            SyncManager.request(this)
+            android.widget.Toast.makeText(this, "Mengirim data…", android.widget.Toast.LENGTH_SHORT).show()
+        }
+        prefs.sp.registerOnSharedPreferenceChangeListener(prefListener)
 
         findViewById<Button>(R.id.btnScan).setOnClickListener { launchCamera() }
         findViewById<Button>(R.id.btnHasil).setOnClickListener {
@@ -82,7 +95,18 @@ class ScanActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         refresh()
+        updateSync()
         focusScanner()
+    }
+
+    override fun onDestroy() {
+        prefs.sp.unregisterOnSharedPreferenceChangeListener(prefListener)
+        super.onDestroy()
+    }
+
+    private fun updateSync() {
+        tvSync.text = SyncManager.statusText(prefs)
+        btnKirim.visibility = if (prefs.syncMode == SyncMode.NONE) View.GONE else View.VISIBLE
     }
 
     private fun submitScannerText() {
