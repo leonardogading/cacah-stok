@@ -52,6 +52,9 @@ class LoginActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnMulai).setOnClickListener { mulai() }
         findViewById<Button>(R.id.btnImporLokasi).setOnClickListener { pickLokasi.launch(arrayOf("*/*")) }
         findViewById<Button>(R.id.btnImporItem).setOnClickListener { pickItems.launch(arrayOf("*/*")) }
+        findViewById<Button>(R.id.btnLihatItem).setOnClickListener {
+            startActivity(Intent(this, ItemsActivity::class.java))
+        }
         findViewById<Button>(R.id.btnPengiriman).setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
@@ -62,6 +65,7 @@ class LoginActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        refreshItemInfo()
         findViewById<Button>(R.id.btnPengiriman).text =
             "Pengiriman data: ${prefs.syncMode.label}"
     }

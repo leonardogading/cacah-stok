@@ -140,7 +140,15 @@ ke folder tersebut.
 
 **Master item (opsional)**: jika barcode hanya berisi kode, impor file Excel lewat tombol
 *Impor master item* dengan kolom **A = Kode Item, B = Deskripsi, C = Satuan**. Deskripsi dan satuan
-kemudian terisi otomatis saat scan. Aplikasi juga "mengingat" item yang pernah disimpan, jadi
+kemudian terisi otomatis saat scan.
+
+Untuk melihat isi master item, tekan **Lihat / hapus master item** di layar awal. Di layar itu Anda bisa:
+- mencari item berdasarkan kode, deskripsi atau satuan,
+- mengetuk item untuk **edit** atau **hapus**,
+- mencentang beberapa item (atau tekan lama), lalu **HAPUS TERPILIH**; **PILIH SEMUA** memilih semua hasil pencarian,
+- menu ⋮ **Tambah item** atau **Hapus semua master item**.
+
+Menghapus master item tidak menghapus data hasil cacah. Aplikasi juga "mengingat" item yang pernah disimpan, jadi
 scan berikutnya untuk kode yang sama otomatis terisi.
 
 ## Struktur kode
@@ -155,6 +163,7 @@ app/src/main/java/com/cacahstok/app/
   XlsxReader.kt      – baca .xlsx (lokasi & master item)
   XlsxWriter.kt      – tulis .xlsx hasil export
   BarcodeParser.kt   – memecah isi barcode menjadi kode & nama item
+  ItemsActivity.kt   – lihat, cari, edit & hapus master item
   SettingsActivity.kt – pilihan tujuan pengiriman data + tes koneksi
   Sync.kt            – pengiriman otomatis (Google Sheets & folder jaringan SMB)
 google-apps-script/Code.gs – script penerima data di Google Sheets

@@ -119,6 +119,43 @@ class DbHelper(context: Context) :
 
     fun itemCount(): Long = DatabaseUtils.queryNumEntries(readableDatabase, "items")
 
+    /** Daftar master item, bisa dicari berdasarkan kode / deskripsi / satuan. */
+    fun items(search: String? = null): List<Item> {
+        val q = search?.trim().orEmpty()
+        val c = if (q.isEmpty()) {
+            readableDatabase.query("items", null, null, null, null, null, "kode COLLATE NOCASE")
+        } else {
+            val like = "%$q%"
+            readableDatabase.query(
+                "items", null, "kode LIKE ? OR deskripsi LIKE ? OR satuan LIKE ?",
+                arrayOf(like, like, like), null, null, "kode COLLATE NOCASE"
+            )
+        }
+        return c.use { cur ->
+            val iK = cur.getColumnIndexOrThrow("kode")
+            val iD = cur.getColumnIndexOrThrow("deskripsi")
+            val iS = cur.getColumnIndexOrThrow("satuan")
+            val list = ArrayList<Item>(cur.count)
+            while (cur.moveToNext()) list.add(Item(cur.getString(iK), cur.getString(iD), cur.getString(iS)))
+            list
+        }
+    }
+
+    fun deleteItems(kodes: Collection<String>) {
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            for (k in kodes) db.delete("items", "kode=?", arrayOf(k))
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+    }
+
+    fun deleteAllItems() {
+        writableDatabase.delete("items", null, null)
+    }
+
     // ---------- helper ----------
 
     private fun CountRecord.toValues() = ContentValues().apply {
